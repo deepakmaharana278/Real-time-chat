@@ -8,26 +8,55 @@ sio = socketio.Server(
     cors_allowed_origins="*",
     async_mode="eventlet"
 )
-
 # Create WSGI app
 app = socketio.WSGIApp(sio)
 
+users = {}
 
 @sio.event
 def connect(sid, environ):
     print("User connected:", sid)
 
 
+def join_chat(sid,data):
+    username = data["username"]
+
+    users[sid] = username
+    print(username,"joined chat")
+
+    sio.emit("receive_message", {
+        "system": True,
+        "message":f"{username} joined the chat"
+    })
+
+
 @sio.event
 def send_message(sid, data):
-    print("Message:", data)
+    # print("Message:", data)
 
-    sio.emit("receive_message", data)
+    username = users.get(sid,"Anonymous")
+    message = data["message"]
+
+    sio.emit("receive_message", {
+        "username": username,
+        "message": message
+    })
 
 
 @sio.event
 def disconnect(sid):
-    print("User disconnected:", sid)
+
+    username = users.get(sid)
+
+    if username:
+        print(username,"User disconnected:")
+
+        sio.emit("receive_message",{
+            "system": True,
+            "message": f"{username} left the chat"
+        })
+
+        del users[sid]
 
 
 if __name__ == "__main__":
