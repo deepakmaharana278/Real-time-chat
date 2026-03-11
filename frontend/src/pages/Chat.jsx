@@ -3,31 +3,45 @@ import { socket } from "../socket";
 
 const Chat = () => {
   const [username, setUsername] = useState("");
+  const [currentUser, setCurrentUser] = useState("");
   const [joined, setJoined] = useState(false);
 
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
+  const [users, setUsers] = useState([]);
 
   const joinChat = () => {
-    if (username.trim() === "") return;
+    if (!username.trim()) return;
 
     socket.emit("join_chat", { username });
+
+    setCurrentUser(username);
     setJoined(true);
   };
 
   const sendMessage = () => {
-    if (message.trim() === "") return;
+    if (!message.trim()) return;
+
     socket.emit("send_message", { message });
     setMessage("");
   };
 
   useEffect(() => {
+    socket.on("connect", () => {
+      console.log("Connected:", socket.id);
+    });
+
     socket.on("receive_message", (data) => {
       setChat((prev) => [...prev, data]);
     });
 
+    socket.on("users_list", (data) => {
+      setUsers(data);
+    });
+
     return () => {
       socket.off("receive_message");
+      socket.off("users_list");
     };
   }, []);
 
@@ -46,40 +60,66 @@ const Chat = () => {
   }
 
   return (
-    <div className="flex flex-col items-center mt-10">
-      <h1 className="text-2xl font-bold mb-4">Deepak Chat</h1>
+    <div className="flex h-screen">
+      <div className="w-1/4 bg-gray-200 p-4">
+        <h2 className="font-bold mb-3">Online Users</h2>
 
-      <div className="border w-80 h-80 overflow-y-scroll p-3 mb-3">
-        {chat.map((msg, index) => (
-
-          msg.system ? (
-
-            <p key={index} className="text-center text-gray-500">
-              {msg.message}
-            </p>
-          ): (
-              <p key={index}>
-              <strong>{msg.username}</strong>: {msg.message}
-            </p>
-          )
+        {users.map((user, index) => (
+          <p key={index} className="mb-1">
+            {user}
+          </p>
         ))}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col w-3/4 p-4">
+        <h1 className="text-2xl font-bold mb-4">Deepak Chat</h1>
 
-        <input
-          className="border p-2"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
+        <div className="flex-1 border p-4 overflow-y-scroll mb-3">
+          {chat.map((msg, index) => {
 
-        <button
-          className="bg-blue-500 text-white px-4"
-          onClick={sendMessage}
-        >
-          Send
-        </button>
+            const isMine = msg.username === currentUser;
 
+            return msg.system ? (
+
+              <p key={index} className="text-center text-gray-500">
+                {msg.message}
+              </p>
+
+            ) : (
+
+              <div
+                key={index}
+                className={`flex ${isMine ? "justify-end" : "justify-start"} mb-2`}
+              >
+
+                <div
+                  className={`px-3 py-2 rounded-lg max-w-xs
+                  ${isMine
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-300 text-black"
+                  }`}
+                >
+
+                  <strong>{msg.username}</strong>: {msg.message}
+
+                </div>
+
+              </div>
+
+            );
+
+          })}
+
+        </div>
+
+
+        <div className="flex gap-2">
+          <input className="border p-2 flex-1" value={message} onChange={(e) => setMessage(e.target.value)} />
+
+          <button className="bg-blue-500 text-white px-4" onClick={sendMessage}>
+            Send
+          </button>
+        </div>
       </div>
     </div>
   );

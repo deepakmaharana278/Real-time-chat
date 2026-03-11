@@ -17,17 +17,23 @@ users = {}
 def connect(sid, environ):
     print("User connected:", sid)
 
+@sio.event
+def join_chat(sid, data):
 
-def join_chat(sid,data):
+    print("Join event recevied:", data)
+
     username = data["username"]
 
     users[sid] = username
-    print(username,"joined chat")
+
+    print(username, "joined chat")
 
     sio.emit("receive_message", {
         "system": True,
-        "message":f"{username} joined the chat"
+        "message": f"{username} joined the chat"
     })
+
+    sio.emit("users_list", list(users.values()))
 
 
 @sio.event
@@ -35,11 +41,11 @@ def send_message(sid, data):
     # print("Message:", data)
 
     username = users.get(sid,"Anonymous")
-    message = data["message"]
+    
 
     sio.emit("receive_message", {
         "username": username,
-        "message": message
+        "message": data["message"]
     })
 
 
@@ -57,6 +63,8 @@ def disconnect(sid):
         })
 
         del users[sid]
+
+        sio.emit("users_list", list(users.values()))
 
 
 if __name__ == "__main__":
