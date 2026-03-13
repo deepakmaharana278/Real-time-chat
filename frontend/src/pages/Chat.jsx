@@ -34,6 +34,10 @@ const Chat = () => {
       console.log("Connected:", socket.id);
     });
 
+    socket.on("chat_history", (messages) => {
+      setChat(messages);
+    });
+
     socket.on("receive_message", (data) => {
       setChat((prev) => [...prev, data]);
     });
@@ -43,6 +47,7 @@ const Chat = () => {
     });
 
     return () => {
+      socket.off("chat_history")
       socket.off("receive_message");
       socket.off("users_list");
     };
