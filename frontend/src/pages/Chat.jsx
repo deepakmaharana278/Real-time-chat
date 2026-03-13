@@ -5,7 +5,7 @@ const Chat = () => {
   const [username, setUsername] = useState("");
   const [currentUser, setCurrentUser] = useState("");
   const [joined, setJoined] = useState(false);
-
+  const [selectedUser, setSelectedUser] = useState(null);
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
   const [users, setUsers] = useState([]);
@@ -22,7 +22,10 @@ const Chat = () => {
   const sendMessage = () => {
     if (!message.trim()) return;
 
-    socket.emit("send_message", { message });
+    socket.emit("send_message", {
+      message: message,
+      target: selectedUser,
+    });
     setMessage("");
   };
 
@@ -65,7 +68,7 @@ const Chat = () => {
         <h2 className="font-bold mb-3">Online Users</h2>
 
         {users.map((user, index) => (
-          <p key={index} className="mb-1">
+          <p key={index} className={`mb-1 cursor-pointer p-1 rounded ${selectedUser === user ? "bg-blue-300" : ""}`} onClick={() => setSelectedUser(user)}>
             {user}
           </p>
         ))}
@@ -76,45 +79,30 @@ const Chat = () => {
 
         <div className="flex-1 border p-4 overflow-y-scroll mb-3">
           {chat.map((msg, index) => {
-
             const isMine = msg.username === currentUser;
 
             return msg.system ? (
-
               <p key={index} className="text-center text-gray-500">
                 {msg.message}
               </p>
-
             ) : (
-
-              <div
-                key={index}
-                className={`flex ${isMine ? "justify-end" : "justify-start"} mb-2`}
-              >
-
+              <div key={index} className={`flex ${isMine ? "justify-end" : "justify-start"} mb-2`}>
                 <div
                   className={`px-3 py-2 rounded-lg max-w-xs
-                  ${isMine
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-300 text-black"
-                  }`}
+                  ${isMine ? "bg-blue-500 text-white" : "bg-gray-300 text-black"}`}
                 >
-
-                  <strong>{msg.username}</strong>: {msg.message}
-
+                  <strong>
+                    {msg.private ? "(Private) " : ""}
+                    {msg.username}
+                  </strong>: {msg.message}
                 </div>
-
               </div>
-
             );
-
           })}
-
         </div>
 
-
         <div className="flex gap-2">
-          <input className="border p-2 flex-1" value={message} onChange={(e) => setMessage(e.target.value)} />
+          <input className="border p-2 flex-1" value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMessage()}/>
 
           <button className="bg-blue-500 text-white px-4" onClick={sendMessage}>
             Send

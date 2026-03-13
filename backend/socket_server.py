@@ -40,13 +40,41 @@ def join_chat(sid, data):
 def send_message(sid, data):
     # print("Message:", data)
 
-    username = users.get(sid,"Anonymous")
+    sender = users.get(sid)
+    message = data["message"]
+    target_user = data.get("target")  # private receiver
     
+    # Private Message
+    if target_user:
 
-    sio.emit("receive_message", {
-        "username": username,
-        "message": data["message"]
-    })
+        target_sid = None
+
+        for s, name in users.items():
+            if name == target_user:
+                target_sid = s
+                break
+
+        if target_sid:
+            # send to receiver
+            sio.emit("receive_message", {
+                "username": sender,
+                "message": data["message"],
+                "private":True
+            },to=target_sid)
+
+            # send to sender
+            sio.emit("receive_message", {
+                "username": sender,
+                "message": message,
+                "private": True
+            }, to=sid)
+    else:
+        # Public message
+        sio.emit("receive_message", {
+            "username": sender,
+            "message": message
+        })
+    
 
 
 @sio.event
