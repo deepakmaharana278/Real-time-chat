@@ -10,6 +10,7 @@ import socketio
 from chat_app.models import Message
 from django.db import close_old_connections, connection
 from contextlib import contextmanager
+from datetime import datetime
 
 
 # DB helper — call this wrapping every block of ORM code
@@ -85,12 +86,21 @@ def send_message(sid, data):
             (s for s, name in users.items() if name == target_user),
             None
         )
-        payload = {"username": sender, "message": message, "private": True}
+        payload = {
+            "username": sender, 
+            "message": message, 
+            "private": True,
+            "time": datetime.now().strftime("%H:%M")
+        }
         if target_sid:
             sio.emit("receive_message", payload, to=target_sid)
-        sio.emit("receive_message", payload, to=sid)   # echo to sender
+        sio.emit("receive_message", payload, to=sid)   
     else:
-        sio.emit("receive_message", {"username": sender, "message": message})
+        sio.emit("receive_message", {
+            "username": sender, 
+            "message": message,
+            "time": datetime.now().strftime("%H:%M")
+        })
 
 
 @sio.event
