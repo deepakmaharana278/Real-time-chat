@@ -49,12 +49,13 @@ def join_chat(sid, data):
     print(username, "joined chat")
 
     with db_session():
-        messages = Message.objects.order_by("timestamp")[:50]
+        messages = Message.objects.all().order_by("timestamp")[:50]
         history = [
             {
                 "username": msg.sender,
                 "message":  msg.message,
                 "private":  msg.receiver is not None,
+                "time": msg.timestamp.strftime("%H:%M")
             }
             for msg in messages
         ]
@@ -101,6 +102,28 @@ def send_message(sid, data):
             "message": message,
             "time": datetime.now().strftime("%H:%M")
         })
+
+@sio.event
+def typing(sid, data):
+    username = users.get(sid)
+    target_user = data.get("target")
+
+    # privatae typing
+    if target_user:
+        target_sid = next(
+            (s for s, name in users.items() if name == target_user),
+            None
+        )
+
+        if target_sid:
+            sio.emit("typing", {"username": username}, to=target_sid)
+    # Public typing
+    else:
+        sio.emit(
+            "typing",
+            {"username": username},
+            skip_sid=sid   
+        )
 
 
 @sio.event
