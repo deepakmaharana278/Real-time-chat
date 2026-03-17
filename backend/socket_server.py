@@ -56,6 +56,8 @@ def join_chat(sid, data):
                 "username":msg.sender,
                 "message":msg.message,
                 "private":msg.receiver is not None,
+                "audio":msg.audio,
+                "msg_type":msg.msg_type,
                 "status":msg.status,      
                 "time":msg.timestamp.strftime("%H:%M"),
             }
@@ -162,6 +164,46 @@ def typing(sid, data):
             skip_sid=sid   
         )
 
+@sio.event
+def send_voice(sid, data):
+    sender = users.get(sid)
+    audio_base64 = data.get("audio")   # base64 string
+    target_user = data.get("target")
+
+    target_sid = next(
+        (s for s, name in users.items() if name == target_user), None
+    ) if target_user else None
+
+    initial_status = "delivered" if target_sid else "sent"
+
+    with db_session():
+        msg_obj = Message.objects.create(
+            sender=sender,
+            receiver=target_user,
+            audio=audio_base64,
+            msg_type="audio",
+            status=initial_status,
+        )
+        msg_id = msg_obj.id
+
+    payload = {
+        "id":msg_id,
+        "username": sender,
+        "audio":audio_base64,
+        "msg_type":"audio",
+        "private":bool(target_user),
+        "status":initial_status,
+        "time":datetime.now().strftime("%H:%M"),
+    }
+
+    if target_user:
+        if target_sid:
+            sio.emit("receive_message", payload, to=target_sid)
+            sio.emit("message_status", {"id": msg_id, "status": "delivered"}, to=sid)
+        sio.emit("receive_message", payload, to=sid)
+    else:
+        sio.emit("receive_message", payload)
+
 
 @sio.event
 def disconnect(sid):
@@ -177,7 +219,6 @@ def disconnect(sid):
 
  
 # Entry point
- 
 if __name__ == "__main__":
     print("Socket.IO server running on port 5000")
     eventlet.wsgi.server(

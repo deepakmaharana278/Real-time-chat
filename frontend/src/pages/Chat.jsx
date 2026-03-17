@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { socket } from "../socket";
+import VoiceMessage from "./VoiceMessage";
 
 const Chat = () => {
   const [username, setUsername] = useState("");
@@ -11,6 +12,7 @@ const Chat = () => {
   const [users, setUsers] = useState([]);
   const bottomRef = useRef(null);
   const [typingUser, setTypingUser] = useState("");
+  const [showVoice, setShowVoice] = useState(false);
 
   const joinChat = () => {
     if (!username.trim()) return;
@@ -82,6 +84,7 @@ const Chat = () => {
       socket.off("receive_message");
       socket.off("users_list");
       socket.off("typing");
+      socket.off("message_status");
     };
   }, []);
 
@@ -187,7 +190,11 @@ const Chat = () => {
                             <i className="fas fa-lock"></i> Private
                           </span>
                         )}
-                        <p className="text-sm wrap-break-words">{msg.message}</p>
+                        {msg.msg_type === "audio" ? (
+                          <audio controls src={`data:audio/webm;base64,${msg.audio}`} className="w-48 h-8 mt-1" />
+                        ) : (
+                          <p className="text-sm wrap-break-words">{msg.message}</p>
+                        )}
                         <p className={`text-[10px] mt-1 text-right ${isMine ? "text-blue-100" : "text-gray-400"}`}>
                           {msg.time}
                           <Ticks status={msg.status} isMine={isMine} isPrivate={msg.private} />
@@ -226,9 +233,12 @@ const Chat = () => {
                 <i className="fa-solid fa-paper-plane text-xs"></i>
               </button>
             </div>
-            <button className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center">
+            <button onClick={() => setShowVoice(true)} className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center">
               <i className="fas fa-microphone text-gray-500"></i>
             </button>
+
+            {/* Voice modal */}
+            {showVoice && <VoiceMessage currentUser={currentUser} selectedUser={selectedUser} onClose={() => setShowVoice(false)} />}
           </div>
         </div>
       </div>
