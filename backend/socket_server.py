@@ -52,10 +52,12 @@ def join_chat(sid, data):
         messages = Message.objects.all().order_by("timestamp")[:50]
         history = [
             {
-                "username": msg.sender,
-                "message":  msg.message,
-                "private":  msg.receiver is not None,
-                "time": msg.timestamp.strftime("%H:%M")
+                "id":msg.id,           
+                "username":msg.sender,
+                "message":msg.message,
+                "private":msg.receiver is not None,
+                "status":msg.status,      
+                "time":msg.timestamp.strftime("%H:%M"),
             }
             for msg in messages
         ]
@@ -72,36 +74,71 @@ def join_chat(sid, data):
 def send_message(sid, data):
     sender = users.get(sid)
     message = data.get("message")
-    target_user = data.get("target")  # None for public messages
+    target_user = data.get("target")
+
+
+    target_sid = next(
+        (s for s, name in users.items() if name == target_user), None
+    ) if target_user else None
+
+    initial_status = "delivered" if target_sid else "sent"
 
     with db_session():
-        Message.objects.create(
+        msg_obj = Message.objects.create(
             sender=sender,
             receiver=target_user,
             message=message,
+            status=initial_status,
         )
+        msg_id = msg_obj.id
+
+    payload = {
+        "id":       msg_id,
+        "username": sender,
+        "message":  message,
+        "private":  bool(target_user),
+        "status":   initial_status,      
+        "time":     datetime.now().strftime("%H:%M"),
+    }
 
     if target_user:
-        # resolve target's sid
-        target_sid = next(
-            (s for s, name in users.items() if name == target_user),
-            None
-        )
-        payload = {
-            "username": sender, 
-            "message": message, 
-            "private": True,
-            "time": datetime.now().strftime("%H:%M")
-        }
         if target_sid:
             sio.emit("receive_message", payload, to=target_sid)
-        sio.emit("receive_message", payload, to=sid)   
+        sio.emit("receive_message", payload, to=sid)
+
+        if target_sid:
+            sio.emit("message_status", {"id": msg_id, "status": "delivered"}, to=sid)
     else:
-        sio.emit("receive_message", {
-            "username": sender, 
-            "message": message,
-            "time": datetime.now().strftime("%H:%M")
-        })
+        sio.emit("receive_message", payload)
+
+
+
+@sio.event
+def messages_read(sid, data):
+    reader = users.get(sid)
+    sender_name = data.get("from_user")
+
+    with db_session():
+        updated_ids = list(
+            Message.objects.filter(
+                sender=sender_name,
+                receiver=reader,
+            ).exclude(status="read")
+            .values_list("id", flat=True)
+        )
+        if updated_ids:                    
+            Message.objects.filter(id__in=updated_ids).update(status="read")
+
+    # Notify the original sender their messages were read
+    sender_sid = next(
+        (s for s, name in users.items() if name == sender_name), None
+    )
+    if sender_sid and updated_ids:
+        sio.emit("message_status", {
+            "ids":    updated_ids,
+            "status": "read"
+        }, to=sender_sid)
+        
 
 @sio.event
 def typing(sid, data):

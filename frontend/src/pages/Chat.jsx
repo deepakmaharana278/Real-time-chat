@@ -37,6 +37,12 @@ const Chat = () => {
   }, [chat]);
 
   useEffect(() => {
+    if (selectedUser) {
+      socket.emit("messages_read", { from_user: selectedUser });
+    }
+  }, [selectedUser]);
+
+  useEffect(() => {
     socket.on("connect", () => {
       console.log("Connected:", socket.id);
     });
@@ -57,6 +63,16 @@ const Chat = () => {
       }, 1500);
     });
 
+    socket.on("message_status", (data) => {
+      setChat((prev) =>
+        prev.map((msg) => {
+          if (data.id && msg.id === data.id) return { ...msg, status: data.status };
+          if (data.ids && data.ids.includes(msg.id)) return { ...msg, status: data.status };
+          return msg;
+        }),
+      );
+    });
+
     socket.on("users_list", (data) => {
       setUsers(data);
     });
@@ -69,12 +85,27 @@ const Chat = () => {
     };
   }, []);
 
+  const Ticks = ({ status, isMine, isPrivate }) => {
+    if (!isMine || !status || !isPrivate) return null;
+    if (status === "read" || status === "delivered")
+      return (
+        <span className="text-blue-400 text-xs">
+          <i className="fa-solid fa-check-double text-xs"></i>
+        </span>
+      );
+    return (
+      <span className="text-gray-300 text-xs">
+        <i className="fa-solid fa-check text-xs"></i>
+      </span>
+    );
+  };
+
   if (!joined) {
     return (
       <div className="flex flex-col items-center mt-20">
         <h1 className="text-2xl mb-4">Join Chat</h1>
 
-        <input className="border p-2 mb-2" placeholder="Enter username" onChange={(e) => setUsername(e.target.value)} />
+        <input className="border p-2 mb-2" placeholder="Enter username" onChange={(e) => setUsername(e.target.value)} onKeyDown={(e) => e.key === "Enter" && joinChat()} />
 
         <button className="bg-blue-500 text-white px-4 py-2" onClick={joinChat}>
           Join
@@ -95,23 +126,23 @@ const Chat = () => {
 
         <div className="flex-1 overflow-y-auto p-3">
           {users
-            .filter(user => user !== currentUser)
+            .filter((user) => user !== currentUser)
             .map((user, index) => (
-            <button
-              key={index}
-              onClick={() => setSelectedUser(user)}
-              className={`w-full text-left px-4 py-3 mb-1 rounded-xl transition-all duration-200 
+              <button
+                key={index}
+                onClick={() => setSelectedUser(user)}
+                className={`w-full text-left px-4 py-3 mb-1 rounded-xl transition-all duration-200 
             ${selectedUser === user ? "bg-blue-50 border-blue-200 shadow-sm" : "hover:bg-gray-50"}`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">{user.charAt(0).toUpperCase()}</div>
-                <div>
-                  <p className={`font-medium ${selectedUser === user ? "text-blue-600" : "text-gray-700"}`}>{user}</p>
-                  <p className="text-xs text-gray-400">Click to chat</p>
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">{user.charAt(0).toUpperCase()}</div>
+                  <div>
+                    <p className={`font-medium ${selectedUser === user ? "text-blue-600" : "text-gray-700"}`}>{user}</p>
+                    <p className="text-xs text-gray-400">Click to chat</p>
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            ))}
         </div>
       </div>
 
@@ -149,7 +180,7 @@ const Chat = () => {
                     <div>
                       <div
                         className={`px-4 py-2 rounded-2xl shadow-sm
-                      ${isMine ? "bg-blue-500 text-white rounded-br-none" : "bg-white text-gray-800 rounded-bl-none border border-gray-200"}`}
+                      ${isMine ? "bg-gray-700 text-white rounded-br-none" : "bg-white text-gray-800 rounded-bl-none border border-gray-200"}`}
                       >
                         {msg.private && (
                           <span className="text-xs font-medium opacity-75 block mb-1">
@@ -157,7 +188,10 @@ const Chat = () => {
                           </span>
                         )}
                         <p className="text-sm wrap-break-words">{msg.message}</p>
-                        <p className={`text-[10px] mt-1 text-right ${isMine ? "text-blue-100" : "text-gray-400"}`}>{msg.time}</p>
+                        <p className={`text-[10px] mt-1 text-right ${isMine ? "text-blue-100" : "text-gray-400"}`}>
+                          {msg.time}
+                          <Ticks status={msg.status} isMine={isMine} isPrivate={msg.private} />
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -167,11 +201,7 @@ const Chat = () => {
             <div ref={bottomRef} />
           </div>
         </div>
-        {typingUser && typingUser !== currentUser && (
-          <div className="px-6 pb-2 text-sm text-gray-400 italic">
-            {typingUser} is typing...
-          </div>
-        )}
+        {typingUser && typingUser !== currentUser && <div className="px-6 pb-2 text-sm text-gray-400 italic">{typingUser} is typing...</div>}
 
         <div className="bg-white border-t border-gray-200 px-6 py-4">
           <div className="flex items-center gap-3">
