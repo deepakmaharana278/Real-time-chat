@@ -10,12 +10,15 @@ class Message(models.Model):
     MSG_TYPES = [
         ("text", "Text"),
         ("audio", "Audio"),
+        ("file", "File"),
     ]
 
     sender = models.CharField(max_length=100)
     receiver = models.CharField(max_length=100, null=True, blank=True)
     message = models.TextField()
-    audio     = models.TextField(blank=True, null=True)  # ← base64 audio
+    audio = models.TextField(blank=True, null=True)  # ← base64 audio
+    file = models.FileField(upload_to="chat_files/", null=True, blank=True) 
+    file_name = models.CharField(max_length=255, blank=True, null=True) 
     msg_type  = models.CharField(max_length=10, choices=MSG_TYPES, default="text")
     timestamp = models.DateTimeField(auto_now_add=True)
 

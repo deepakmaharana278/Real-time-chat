@@ -206,6 +206,11 @@ def send_voice(sid, data):
 
 
 @sio.event
+def send_file(sid, data):
+    sender = users.get(sid)
+
+
+@sio.event
 def disconnect(sid):
     username = users.pop(sid, None)
     if username:
