@@ -1,6 +1,9 @@
 from django.http import JsonResponse
 from chat_app.models import Message
+from django.views.decorators.csrf import csrf_exempt
 
+
+@csrf_exempt
 def upload_file(req):
     if req.method == "POST":
         file = req.FILES.get("file")

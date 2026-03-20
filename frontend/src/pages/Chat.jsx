@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { socket } from "../socket";
 import VoiceMessage from "./VoiceMessage";
+import FileShare from "./FileShare";
 
 const Chat = () => {
   const [username, setUsername] = useState("");
@@ -190,7 +191,17 @@ const Chat = () => {
                             <i className="fas fa-lock"></i> Private
                           </span>
                         )}
-                        {msg.msg_type === "audio" ? (
+                        {msg.msg_type === "file" ? (
+                          <div className="mt-1">
+                            {msg.file_url?.match(/\.(jpg|png|jpeg|gif)$/) ? (
+                              <img src={msg.file_url} className="w-40 rounded-lg" />
+                            ) : (
+                              <a href={msg.file_url} target="_blank" className="text-blue-400 underline">
+                                📎 {msg.file_name}
+                              </a>
+                            )}
+                          </div>
+                        ) : msg.msg_type === "audio" ? (
                           <audio controls src={`data:audio/webm;base64,${msg.audio}`} className="w-48 h-8 mt-1" />
                         ) : (
                           <p className="text-sm wrap-break-words">{msg.message}</p>
@@ -212,6 +223,7 @@ const Chat = () => {
 
         <div className="bg-white border-t border-gray-200 px-6 py-4">
           <div className="flex items-center gap-3">
+            <FileShare selectedUser={selectedUser} />
             <div className="flex-1 relative">
               <input
                 className="w-full border border-gray-200 rounded-full px-5 py-3 pr-12 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
