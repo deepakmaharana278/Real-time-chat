@@ -209,6 +209,46 @@ def send_voice(sid, data):
 def send_file(sid, data):
     sender = users.get(sid)
 
+    file_url = data.get("file_url")
+    file_name = data.get("file_name")
+    target_user = data.get("target")
+
+    target_sid = next(
+        (s for s, name in users.items() if name == target_user), None
+    ) if target_user else None
+
+    initial_status = "delivered" if target_sid else "sent"
+
+    with db_session():
+        msg = Message.objects.create(
+            sender=sender,
+            receiver=target_user,
+            file_name=file_name,
+            msg_type="file",
+            status=initial_status
+        )
+        msg_id = msg.id
+
+    payload = {
+        "id": msg_id,
+        "username": sender,
+        "file_url": file_url,
+        "file_name": file_name,
+        "msg_type": "file",
+        "private": bool(target_user),
+        "status": initial_status,
+        "time": datetime.now().strftime("%H:%M"),
+    }
+
+    if target_user:
+        if target_sid:
+            sio.emit("receive_message",payload,to=target_sid)
+            sio.emit("message_status",{"id": msg_id, "status": "delivered"},to=sid)
+
+        sio.emit("receive_message", payload, to=sid)
+    else:
+        sio.emit("receive_message", payload)
+
 
 @sio.event
 def disconnect(sid):
