@@ -14,6 +14,7 @@ const Chat = () => {
   const bottomRef = useRef(null);
   const [typingUser, setTypingUser] = useState("");
   const [showVoice, setShowVoice] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const joinChat = () => {
     if (!username.trim()) return;
@@ -194,7 +195,7 @@ const Chat = () => {
                         {msg.msg_type === "file" ? (
                           <div className="mt-1">
                             {msg.file_url?.match(/\.(jpg|png|jpeg|gif)$/) ? (
-                              <img src={msg.file_url} className="w-40 rounded-lg" />
+                              <img src={msg.file_url} className="w-40 rounded-lg cursor-pointer hover:scale-105 transition" onClick={() => setPreviewImage(msg.file_url)} />
                             ) : (
                               <a href={msg.file_url} target="_blank" className="text-blue-400 underline">
                                 📎 {msg.file_name}
@@ -253,6 +254,15 @@ const Chat = () => {
             {showVoice && <VoiceMessage currentUser={currentUser} selectedUser={selectedUser} onClose={() => setShowVoice(false)} />}
           </div>
         </div>
+        {previewImage && (
+          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50" onClick={() => setPreviewImage(null)}>
+            <img src={previewImage} className="max-w-[90%] max-h-[90%] rounded-lg" />
+
+            <button className="absolute top-5 right-5 text-white text-2xl" onClick={() => setPreviewImage(null)}>
+              <i className="fas fa-x"></i>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
