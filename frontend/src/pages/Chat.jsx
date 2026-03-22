@@ -198,7 +198,7 @@ const Chat = () => {
                               <img src={msg.file_url} className="w-40 rounded-lg cursor-pointer hover:scale-105 transition" onClick={() => setPreviewImage(msg.file_url)} />
                             ) : (
                               <a href={msg.file_url} target="_blank" className="text-blue-400 underline">
-                                📎 {msg.file_name}
+                                <i className="fas fa-paperclip"></i> {msg.file_name}
                               </a>
                             )}
                           </div>

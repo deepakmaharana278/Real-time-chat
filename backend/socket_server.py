@@ -57,6 +57,8 @@ def join_chat(sid, data):
                 "message":msg.message,
                 "private":msg.receiver is not None,
                 "audio":msg.audio,
+                "file":msg.file,
+                "file_name":msg.file_name,
                 "msg_type":msg.msg_type,
                 "status":msg.status,      
                 "time":msg.timestamp.strftime("%H:%M"),
