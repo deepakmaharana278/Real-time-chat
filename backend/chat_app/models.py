@@ -24,5 +24,32 @@ class Message(models.Model):
 
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="sent")
 
+    reactions = models.ManyToManyField('MessageReaction', related_name='messages', blank=True)
+    is_edited = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    parent_message = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')
+
     def __str__(self):
         return f"{self.sender}: {self.message}"
+    
+
+class MessageReaction(models.Model):
+    EMOJI_CHOICES = [
+        ("👍", "Thumbs Up"),
+        ("❤️", "Heart"),
+        ("😂", "Laugh"),
+        ("😮", "Surprised"),
+        ("😢", "Sad"),
+        ("👏", "Clap"),
+    ]
+    
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='reaction_set')
+    user = models.CharField(max_length=100)
+    emoji = models.CharField(max_length=10, choices=EMOJI_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['message', 'user', 'emoji']
+    
+    def __str__(self):
+        return f"{self.user} reacted {self.emoji} to {self.message.id}"
