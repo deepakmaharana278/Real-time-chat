@@ -7,7 +7,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE","real_time_chat.settings")
 django.setup()
 
 import socketio
-from chat_app.models import Message
+from chat_app.models import *
 from django.db import close_old_connections, connection
 from contextlib import contextmanager
 from datetime import datetime
@@ -97,12 +97,12 @@ def send_message(sid, data):
         msg_id = msg_obj.id
 
     payload = {
-        "id":       msg_id,
+        "id": msg_id,
         "username": sender,
-        "message":  message,
-        "private":  bool(target_user),
-        "status":   initial_status,      
-        "time":     datetime.now().strftime("%H:%M"),
+        "message": message,
+        "private": bool(target_user),
+        "status": initial_status,      
+        "time": datetime.now().strftime("%H:%M"),
     }
 
     if target_user:
@@ -115,6 +115,129 @@ def send_message(sid, data):
     else:
         sio.emit("receive_message", payload)
 
+
+@sio.event
+def add_reaction(sid, data):
+    username = users.get(sid)
+    if not username:
+        return
+    
+    message_id = data.get("message_id")
+    emoji = data.get("emoji")
+    
+    with db_session():
+        try:
+            message = Message.objects.get(id=message_id)
+            
+            # Check if user already reacted with this emoji
+            existing_reaction = MessageReaction.objects.filter(
+                message=message,
+                user=username,
+                emoji=emoji
+            ).first()
+            
+            if existing_reaction:
+                # Remove reaction
+                existing_reaction.delete()
+                action = "removed"
+            else:
+                # Add new reaction
+                MessageReaction.objects.create(
+                    message=message,
+                    user=username,
+                    emoji=emoji
+                )
+                action = "added"
+            
+            # Get all reactions for this message
+            reactions = {}
+            for reaction in message.reaction_set.all():
+                if reaction.emoji not in reactions:
+                    reactions[reaction.emoji] = []
+                reactions[reaction.emoji].append(reaction.user)
+            
+            # Notify all participants
+            sio.emit("reaction_updated", {
+                "message_id": message_id,
+                "reactions": reactions,
+                "user": username,
+                "emoji": emoji,
+                "action": action
+            })
+            
+        except Message.DoesNotExist:
+            pass
+
+@sio.event
+def edit_message(sid, data):
+    username = users.get(sid)
+    if not username:
+        return
+    
+    message_id = data.get("message_id")
+    new_message = data.get("new_message")
+    
+    with db_session():
+        try:
+            message = Message.objects.get(id=message_id)
+            
+            # Check if user is the sender
+            if message.sender != username:
+                sio.emit("error", {"message": "You can only edit your own messages"}, to=sid)
+                return
+            
+            # Update message
+            message.message = new_message
+            message.is_edited = True
+            message.save()
+            
+            # Notify all participants
+            sio.emit("message_edited", {
+                "message_id": message_id,
+                "new_message": new_message,
+                "edited_at": datetime.now().strftime("%H:%M"),
+                "username": username
+            })
+            
+        except Message.DoesNotExist:
+            pass
+
+@sio.event
+def delete_message(sid, data):
+    username = users.get(sid)
+    if not username:
+        return
+    
+    message_id = data.get("message_id")
+    delete_for_everyone = data.get("delete_for_everyone", True)
+    
+    with db_session():
+        try:
+            message = Message.objects.get(id=message_id)
+            
+            # Check if user is the sender
+            if message.sender != username:
+                sio.emit("error", {"message": "You can only delete your own messages"}, to=sid)
+                return
+            
+            if delete_for_everyone:
+                # Soft delete for everyone
+                message.is_deleted = True
+                message.message = "This message was deleted"
+                message.save()
+                
+                sio.emit("message_deleted", {
+                    "message_id": message_id,
+                    "deleted_by": username,
+                    "deleted_at": datetime.now().strftime("%H:%M")
+                })
+            else:
+                # Delete just for the current user (store in a separate table)
+                # You might want to create a UserMessageStatus model for this
+                pass
+            
+        except Message.DoesNotExist:
+            pass
 
 
 @sio.event
