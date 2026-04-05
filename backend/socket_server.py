@@ -392,6 +392,6 @@ def disconnect(sid):
 if __name__ == "__main__":
     print("Socket.IO server running on port 5000")
     eventlet.wsgi.server(
-        eventlet.listen(("0.0.0.0", 5000)),
+        eventlet.listen(("0.0.0.0", 5001)),
         app
     )
