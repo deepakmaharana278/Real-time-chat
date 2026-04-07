@@ -4,7 +4,7 @@ import ReactionBubbles from "./ReactionBubbles";
 import MessageMenu from "./MessageMenu";
 
 const MessageBubble = ({ msg, isMine, onReact, onEdit, onDelete, onImageClick }) => {
-  const [menuOpen, setMenuOpen]         = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
   const closeMenu = () => {
