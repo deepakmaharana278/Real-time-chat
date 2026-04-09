@@ -2,5 +2,5 @@ from django.urls import path
 from accounts.views import *
 
 urlpatterns = [
-    path('',hello),
+    path('reg/',RegisterView.as_view()),
 ]
