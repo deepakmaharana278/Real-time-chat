@@ -19,7 +19,7 @@ def send_verification_email(user, request):
     user.save()
     
     # Build verification URL
-    verification_url = f"{request.scheme}://{request.get_host()}/api/auth/verify-email/{token}/"
+    verification_url = f"{request.scheme}://{request.get_host()}/user/verify-email/{token}/"
     
     subject = "Verify Your Email Address - Deepak Chat App"
     html_message = f"""

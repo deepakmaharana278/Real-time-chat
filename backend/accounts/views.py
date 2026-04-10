@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate
 from accounts.serializers import RegisterSerializer, UserSerializer
 from accounts.utils import send_verification_email, verify_email_token
 from accounts.models import CustomUser
+from rest_framework.views import APIView
 
 
 class RegisterView(generics.CreateAPIView):
@@ -43,3 +44,67 @@ class RegisterView(generics.CreateAPIView):
             'success': False,
             'errors': serializer.errors
         }, status=400)
+
+
+class VerifyEmailView(generics.GenericAPIView):
+    # Email verification endpoint
+    permission_classes = [AllowAny]
+    
+    def get(self, request, token):
+        user, message = verify_email_token(token)
+        
+        if user:
+            return Response({
+                'success': True,
+                'message': message,
+                'email': user.email,
+                'redirect_url': '/login'
+            })
+        
+        return Response({
+            'success': False,
+            'error': message
+        }, status=400)
+    
+
+class LoginView(APIView):  
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+        
+        if not email or not password:
+            return Response({
+                'error': 'Email and password are required'
+            }, status=400)
+        
+        user = authenticate(request, username=email, password=password)
+        
+        if user is None:
+            return Response({
+                'error': 'Invalid credentials'
+            }, status=401)
+        
+        if not user.is_email_verified:
+            return Response({
+                'error': 'Please verify your email before logging in. Check your inbox for the verification link.'
+            }, status=403)
+        
+        if user.is_account_locked():
+            return Response({
+                'error': 'Account is temporarily locked. Try again later.'
+            }, status=423)
+        
+        # Reset failed login attempts on successful login
+        user.reset_failed_login()
+        
+        refresh = RefreshToken.for_user(user)
+        
+        return Response({
+            'success': True,
+            'message': 'Login successful!',
+            'access_token': str(refresh.access_token),
+            'refresh_token': str(refresh),
+            'user': UserSerializer(user).data
+        })
