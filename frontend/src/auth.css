@@ -1,0 +1,348 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0e0c0a;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeUp 0.45s ease both;
+}
+
+.auth-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f0ece4;
+  font-size: 14px;
+  padding: 10px 0;
+  outline: none;
+  font-family: "DM Sans", sans-serif;
+  letter-spacing: 0.02em;
+  transition: border-color 0.2s;
+}
+
+.auth-input:focus {
+  border-bottom-color: #c9a84c;
+}
+
+.auth-input::placeholder {
+  color: rgba(255, 255, 255, 0.18);
+}
+
+.auth-submit {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.1s ease,
+    background 0.2s;
+  cursor: pointer;
+}
+
+.auth-submit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.06);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.auth-submit:hover::after {
+  opacity: 1;
+}
+
+.auth-submit:active {
+  transform: scale(0.98);
+}
+
+.mode-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.mode-link:hover {
+  text-decoration: underline;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #0e0c0a;
+  font-family: "DM Sans", sans-serif;
+}
+
+.left-panel {
+  width: 100%;
+  background: linear-gradient(160deg, #1a1510 0%, #0e0c0a 60%);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.12);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 32px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.right-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.form-wrapper {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #c9a84c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.brand-dot {
+  width: 10px;
+  height: 10px;
+  background: #c9a84c;
+}
+
+.brand-badge {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #c9a84c;
+  margin-bottom: 18px;
+  font-weight: 400;
+}
+
+.brand-title {
+  font-family: "DM Serif Display", serif;
+  font-size: 32px;
+  color: #f0ece4;
+  line-height: 1.2;
+  font-weight: 400;
+  margin: 0;
+}
+
+.brand-title em {
+  color: #c9a84c;
+  font-style: italic;
+}
+
+.footer-note {
+  font-size: 12px;
+  color: #4a4640;
+  line-height: 1.6;
+  max-width: 240px;
+}
+
+.toggle-container {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.toggle-btn {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding-bottom: 12px;
+  transition: color 0.2s;
+  font-family: "DM Sans", sans-serif;
+}
+
+.message-success {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 2px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  border-left: 2px solid #4a9e6a;
+  color: #7dbd9a;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.message-error {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 2px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  border-left: 2px solid #9e4a4a;
+  color: #bd7d7d;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.field-row {
+  margin-bottom: 28px;
+}
+
+.field-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8a8070;
+  margin-bottom: 6px;
+  font-family: "DM Sans", sans-serif;
+}
+
+.submit-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  background: #c9a84c;
+  border: none;
+  color: #0e0c0a;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
+  font-family: "DM Sans", sans-serif;
+  border-radius: 1px;
+}
+
+.submit-btn:disabled {
+  background: rgba(201, 168, 76, 0.5);
+  cursor: not-allowed;
+}
+
+.register-note {
+  margin-top: 20px;
+  font-size: 11px;
+  color: #4a4640;
+  line-height: 1.7;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.register-note span {
+  color: #2e2c28;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.decorative-circle-1 {
+  position: absolute;
+  top: 15%;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  border: 1px solid rgba(201, 168, 76, 0.08);
+  border-radius: 50%;
+}
+
+.decorative-circle-2 {
+  position: absolute;
+  top: 18%;
+  right: -30px;
+  width: 160px;
+  height: 160px;
+  border: 1px solid rgba(201, 168, 76, 0.05);
+  border-radius: 50%;
+}
+
+.decorative-circle-3 {
+  position: absolute;
+  bottom: 12%;
+  left: -40px;
+  width: 180px;
+  height: 180px;
+  border: 1px solid rgba(201, 168, 76, 0.06);
+  transform: rotate(15deg);
+}
+
+@media (min-width: 768px) {
+  .container {
+    flex-direction: row;
+  }
+  .left-panel {
+    width: 42%;
+    border-bottom: none;
+    border-right: 1px solid rgba(201, 168, 76, 0.12);
+    padding: 52px 48px;
+  }
+  .right-panel {
+    width: 58%;
+    padding: 40px 32px;
+  }
+  .brand-logo {
+    margin-bottom: 52px;
+  }
+  .brand-title {
+    font-size: 44px;
+  }
+  .toggle-container {
+    gap: 0;
+    margin-bottom: 48px;
+  }
+  .toggle-btn {
+    padding-bottom: 14px;
+    padding-right: 28px;
+  }
+}
+
+@media (max-width: 767px) {
+  .decorative-circle-1,
+  .decorative-circle-2,
+  .decorative-circle-3 {
+    display: none;
+  }
+  .footer-note {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .right-panel {
+    padding: 32px 16px;
+  }
+  .submit-btn {
+    padding: 12px;
+    font-size: 10px;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .mode-link,
+  .auth-submit {
+    min-height: 44px;
+  }
+  .auth-input {
+    font-size: 16px;
+  }
+}
