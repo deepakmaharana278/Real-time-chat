@@ -11,6 +11,7 @@ def generate_verification_token():
     # Generate secure token for email verification
     return secrets.token_urlsafe(32)
 
+
 def send_verification_email(user, request):
     # Send email verification link
     token = generate_verification_token()
@@ -18,8 +19,9 @@ def send_verification_email(user, request):
     user.token_created_at = timezone.now()
     user.save()
     
-    # Build verification URL
-    verification_url = f"{request.scheme}://{request.get_host()}/user/verify-email/{token}/"
+    
+    FRONTEND_URL = "http://localhost:5173" 
+    verification_url = f"{FRONTEND_URL}/verify-email/{token}/"  
     
     subject = "Verify Your Email Address - Deepak Chat App"
     html_message = f"""
@@ -59,9 +61,9 @@ def send_verification_email(user, request):
         fail_silently=False,
     )
 
+
 def verify_email_token(token):
     # Verify email token and activate account
-
     
     try:
         user = CustomUser.objects.get(email_verification_token=token)
@@ -72,10 +74,17 @@ def verify_email_token(token):
             if timezone.now() > expiry:
                 return None, "Verification link has expired. Please request a new one."
         
+        # Check if already verified (important for multiple clicks)
+        if user.is_email_verified:
+            return user, "Email already verified!"
+        
+        # First time verification
         user.is_email_verified = True
         user.email_verification_token = None
+        user.token_created_at = None
         user.save()
         return user, "Email verified successfully!"
         
     except CustomUser.DoesNotExist:
-        return None, "Invalid verification token."
+        # Token not found - might be already used
+        return None, "Invalid or already used verification link."

@@ -47,19 +47,25 @@ class RegisterView(generics.CreateAPIView):
 
 
 class VerifyEmailView(generics.GenericAPIView):
-    # Email verification endpoint
     permission_classes = [AllowAny]
     
     def get(self, request, token):
         user, message = verify_email_token(token)
         
+        # Always return 200 if user exists OR token was valid
         if user:
             return Response({
                 'success': True,
-                'message': message,
+                'message': 'Email verified successfully!',
                 'email': user.email,
-                'redirect_url': '/login'
-            })
+            }, status=200)
+        
+        # If user already verified, return success
+        if "already" in message.lower():
+            return Response({
+                'success': True,
+                'message': 'Email already verified!',
+            }, status=200)
         
         return Response({
             'success': False,

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Chat from './pages/Chat';
-import Authentication from './Auth/Authentication'; 
+import Authentication from './Auth/Authentication';
+import VerifyEmail from './Auth/VerifyEmail';
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -40,13 +42,36 @@ const App = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {user ? (
-        <Chat user={user} onLogout={handleLogout} />
-      ) : (
-        <Authentication onLogin={handleLogin} />
-      )}
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route 
+          path="/login" 
+          element={
+            user ? <Navigate to="/chat" /> : <Authentication onLogin={handleLogin} />
+          } 
+        />
+        <Route 
+          path="/register" 
+          element={
+            user ? <Navigate to="/chat" /> : <Authentication onLogin={handleLogin} />
+          } 
+        />
+        <Route 
+          path="/verify-email/:token" 
+          element={<VerifyEmail />} 
+        />
+        <Route 
+          path="/chat" 
+          element={
+            user ? <Chat user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
+          } 
+        />
+        <Route 
+          path="/" 
+          element={<Navigate to={user ? "/chat" : "/login"} />} 
+        />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
