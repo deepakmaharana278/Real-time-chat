@@ -6,8 +6,7 @@ import MessageBubble from "./MessageBubble";
 import EditBar from "./Editbar";
 import useChatSocket from "../hooks/useChatSocket";
 
-const Chat = () => {
-  const [username, setUsername] = useState("");
+const Chat = ({ user, onLogout }) => {
   const [currentUser, setCurrentUser] = useState("");
   const [joined, setJoined] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -27,6 +26,21 @@ const Chat = () => {
   }, [chat]);
 
   useEffect(() => {
+    if (!user) return;
+
+    const token = localStorage.getItem("access_token");
+
+    socket.emit("join_chat", {
+      user_id: user.id,
+      username: user.username,
+      token: token,
+    });
+
+    setCurrentUser(user.username);
+    setJoined(true);
+  }, [user]);
+
+  useEffect(() => {
     if (selectedUser) socket.emit("messages_read", { from_user: selectedUser });
   }, [selectedUser]);
 
@@ -39,7 +53,11 @@ const Chat = () => {
 
   const sendMessage = () => {
     if (!message.trim()) return;
-    socket.emit("send_message", { message, target: selectedUser });
+    socket.emit("send_message", {
+      message,
+      target: selectedUser,
+      sender_id: user.id,
+    });
     setMessage("");
     setTypingUser("");
   };
@@ -55,7 +73,7 @@ const Chat = () => {
   const submitEdit = () => {
     if (!editingMsg?.text.trim()) return;
     socket.emit("edit_message", {
-      message_id:  editingMsg.id,
+      message_id: editingMsg.id,
       new_message: editingMsg.text,
     });
     setEditingMsg(null);
@@ -65,23 +83,6 @@ const Chat = () => {
     socket.emit("delete_message", { message_id: msgId, delete_for_everyone: true });
   };
 
-  if (!joined) {
-    return (
-      <div className="flex flex-col items-center mt-20">
-        <h1 className="text-2xl mb-4">Join Chat</h1>
-        <input
-          className="border p-2 mb-2"
-          placeholder="Enter username"
-          onChange={(e) => setUsername(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && joinChat()}
-        />
-        <button className="bg-blue-500 text-white px-4 py-2" onClick={joinChat}>
-          Join
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen bg-gray-50">
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
@@ -89,8 +90,12 @@ const Chat = () => {
           <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <span className="w-2 h-2 bg-green-500 rounded-full" />
             Online Users ({users.length})
+            <button onClick={onLogout} className="text-sm bg-red-500 text-white px-3 py-1 rounded">
+              Logout
+            </button>
           </h2>
         </div>
+
         <div className="flex-1 overflow-y-auto p-3">
           {users
             .filter((user) => user !== currentUser)
@@ -98,18 +103,12 @@ const Chat = () => {
               <button
                 key={index}
                 onClick={() => setSelectedUser(user)}
-                className={`w-full text-left px-4 py-3 mb-1 rounded-xl transition-all duration-200 ${
-                  selectedUser === user ? "bg-blue-50 shadow-sm" : "hover:bg-gray-50"
-                }`}
+                className={`w-full text-left px-4 py-3 mb-1 rounded-xl transition-all duration-200 ${selectedUser === user ? "bg-blue-50 shadow-sm" : "hover:bg-gray-50"}`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                    {user.charAt(0).toUpperCase()}
-                  </div>
+                  <div className="w-10 h-10 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">{user.charAt(0).toUpperCase()}</div>
                   <div>
-                    <p className={`font-medium ${selectedUser === user ? "text-blue-600" : "text-gray-700"}`}>
-                      {user}
-                    </p>
+                    <p className={`font-medium ${selectedUser === user ? "text-blue-600" : "text-gray-700"}`}>{user}</p>
                     <p className="text-xs text-gray-400">Click to chat</p>
                   </div>
                 </div>
@@ -121,9 +120,7 @@ const Chat = () => {
       <div className="flex-1 flex flex-col bg-white">
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <h1 className="text-xl font-semibold text-gray-800">Deepak Chat</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {selectedUser ? `Chatting with ${selectedUser}` : "Select a user to start chatting"}
-          </p>
+          <p className="text-sm text-gray-500 mt-1">{selectedUser ? `Chatting with ${selectedUser}` : "Select a user to start chatting"}</p>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 bg-gray-50">
@@ -132,40 +129,21 @@ const Chat = () => {
               if (msg.system) {
                 return (
                   <div key={index} className="flex justify-center my-3">
-                    <span className="px-4 py-2 bg-gray-100 rounded-full text-xs text-gray-500">
-                      {msg.message}
-                    </span>
+                    <span className="px-4 py-2 bg-gray-100 rounded-full text-xs text-gray-500">{msg.message}</span>
                   </div>
                 );
               }
               return (
-                <MessageBubble
-                  key={msg.id ?? index}
-                  msg={msg}
-                  isMine={msg.username === currentUser}
-                  onReact={handleReact}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onImageClick={setPreviewImage}
-                />
+                <MessageBubble key={msg.id ?? index} msg={msg} isMine={msg.username === currentUser} onReact={handleReact} onEdit={handleEdit} onDelete={handleDelete} onImageClick={setPreviewImage} />
               );
             })}
             <div ref={bottomRef} />
           </div>
         </div>
 
-        {typingUser && typingUser !== currentUser && (
-          <div className="px-6 pb-2 text-sm text-gray-400 italic">
-            {typingUser} is typing...
-          </div>
-        )}
+        {typingUser && typingUser !== currentUser && <div className="px-6 pb-2 text-sm text-gray-400 italic">{typingUser} is typing...</div>}
 
-        <EditBar
-          editingMsg={editingMsg}
-          onChange={(text) => setEditingMsg((prev) => ({ ...prev, text }))}
-          onSave={submitEdit}
-          onCancel={() => setEditingMsg(null)}
-        />
+        <EditBar editingMsg={editingMsg} onChange={(text) => setEditingMsg((prev) => ({ ...prev, text }))} onSave={submitEdit} onCancel={() => setEditingMsg(null)} />
 
         <div className="bg-white border-t border-gray-200 px-6 py-4">
           <div className="flex items-center gap-3">
@@ -188,32 +166,17 @@ const Chat = () => {
                 <i className="fa-solid fa-paper-plane text-xs" />
               </button>
             </div>
-            <button
-              onClick={() => setShowVoice(true)}
-              className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center"
-            >
+            <button onClick={() => setShowVoice(true)} className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center">
               <i className="fas fa-microphone text-gray-500" />
             </button>
-            {showVoice && (
-              <VoiceMessage
-                currentUser={currentUser}
-                selectedUser={selectedUser}
-                onClose={() => setShowVoice(false)}
-              />
-            )}
+            {showVoice && <VoiceMessage currentUser={currentUser} selectedUser={selectedUser} onClose={() => setShowVoice(false)} />}
           </div>
         </div>
 
         {previewImage && (
-          <div
-            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
-            onClick={() => setPreviewImage(null)}
-          >
+          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50" onClick={() => setPreviewImage(null)}>
             <img src={previewImage} className="max-w-[90%] max-h-[90%] rounded-lg" alt="preview" />
-            <button
-              className="absolute top-5 right-5 text-white text-2xl"
-              onClick={() => setPreviewImage(null)}
-            >
+            <button className="absolute top-5 right-5 text-white text-2xl" onClick={() => setPreviewImage(null)}>
               <i className="fas fa-x" />
             </button>
           </div>
