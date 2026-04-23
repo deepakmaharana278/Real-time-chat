@@ -85,7 +85,8 @@ export default function Authentication({ onLogin }) {
   };
 
   return (
-    <div className="container">
+    <div className="auth-root">
+      <div className="container">
       <div className="left-panel">
         <div className="decorative-circle-1" />
         <div className="decorative-circle-2" />
@@ -232,6 +233,7 @@ export default function Authentication({ onLogin }) {
             </p>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

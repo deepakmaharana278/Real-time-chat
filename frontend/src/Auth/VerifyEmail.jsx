@@ -49,7 +49,8 @@ const VerifyEmail = () => {
   }, [token, navigate]);
 
   return (
-    <div className="container">
+    <div className="auth-root">
+      <div className="container">
       <div className="left-panel">
         <div className="decorative-circle-1" />
         <div className="decorative-circle-2" />
@@ -134,6 +135,7 @@ const VerifyEmail = () => {
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
